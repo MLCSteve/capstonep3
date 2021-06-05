@@ -25,20 +25,19 @@ pipeline {
                             }
                         }
 
-                    } finally {
                         // push image
-                        docker.withRegistry('https://registry.hub.docker.com', 'b5a58bfa-3753-4818-a8cc-e4be44d06a7a') {
-                            app.push("$registry:$BUILD_NUMBER")
-                            app.push("latest")
-                        } 
                         echo "Trying to Push Docker Build to DockerHub"
-
+                        docker.withRegistry('https://registry.hub.docker.com', 'b5a58bfa-3753-4818-a8cc-e4be44d06a7a') {
+                            dockerImage.push("${env.BUILD_NUMBER}")
+                            dockerImage.push("latest")
+                        } 
+                    } finally {                    
                         // Removing the docker image
-                        sh "docker rmi $registry:$BUILD_NUMBER"
-                                                echo "Removing image" + "registry.hub.docker.com/$registry:$BUILD_NUMBER"
-                        sh "docker rmi registry.hub.docker.com/$registry:$BUILD_NUMBER"
-                        echo "Removing image" + "registry.hub.docker.com/$registry:latest"
-                        sh "docker rmi registry.hub.docker.com/$registry:latest"
+                        sh """
+                            IMAGE_ID=\$(docker images --filter='reference=$registry' --quiet)
+                            echo "Removing Docker Images: \$IMAGE_ID"
+                            docker rmi \$IMAGE_ID -f
+                        """
                     }
                 }
             }
